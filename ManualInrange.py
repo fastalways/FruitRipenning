@@ -5,7 +5,7 @@ from os import listdir
 from os.path import isfile, join
 import copy
 
-img_path = './dataset21-23/'
+img_path = './BananaForSegment_12Feb2022/'
 
 alpha_value = .7 # 0.1-1
 
