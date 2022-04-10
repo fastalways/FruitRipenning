@@ -6,12 +6,14 @@ from tkinter import *
 from tkinter import filedialog
 
 #-------------------------------------------------------------------
+#### ตั้งค่า Threshold ที่ยอมรับการ calibrate ว่าผ่านแล้ว ####
 diffThreshold = 750
 #-------------------------------------------------------------------
 
-
+#### 1) เปิดกล้อง ####
 cap = cv2.VideoCapture(0)
 
+#### ฟังก์ชันสร้าง Histogram ####
 def renderHistogram(colorImage):
     # Cal histogram
     bgr_planes = cv2.split(colorImage)
@@ -41,6 +43,8 @@ def renderHistogram(colorImage):
                 ( 0, 0, 255), thickness=2)
     return hist_img,[r_hist,g_hist,b_hist]
 
+#### 2) เปิดไฟล์กระดาษเขียว calibrated จากไฟล์ภาพที่บันทึกไว้แล้ว ####
+#### ใช้ from tkinter import filedialog ในการสร้าง GUI Dialog เพื่อเปิดไฟล์ภาพ
 filenameCalibratedImage = filedialog.askopenfilename(initialdir = "./",
                                           title = "Select a File",
                                           filetypes = (("Calibrated Image",
@@ -48,10 +52,14 @@ filenameCalibratedImage = filedialog.askopenfilename(initialdir = "./",
                                                        ("all files",
                                                         "*.*")))
 print(f"Loaded Calibrated Image:{filenameCalibratedImage}")
+#### 3) อ่านภาพกระดาษเขียว calibrated ####
 CalibratedImage = cv2.imread(filenameCalibratedImage)
 
+#### 4) นำภาพกระดาษเขียว calibrated มาทำ Histogram ####
 CalibratedImage_HistImage,CalibratedImage_Hist = renderHistogram(CalibratedImage)
 
+
+#### 5) เปิดไฟกล่อง ####
 #relay
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
@@ -61,10 +69,12 @@ GPIO.output(4, True)
 
 #----- Load Calibrate Image (GreenPaper)
 
+#### 6) พิมพ์ข้อความ กด c เพื่อแคปภาพ กด e เพื่อออก ####
 
 print("Press c to capture calibration image")
 print("Press e to exit")
 
+#### ฟังก์ชันหาขอบภาพ ####
 def laplaceDetector(img,kernel_size = 3,ddepth = cv2.CV_16S):
     src = img.copy()
     src = cv2.GaussianBlur(src, (3, 3), 0)
@@ -72,9 +82,13 @@ def laplaceDetector(img,kernel_size = 3,ddepth = cv2.CV_16S):
     abs_dst = cv2.convertScaleAbs(dst)
     return abs_dst
 
+#### ฟังก์ชันหามุมของภาพ ####
 def cornerDetector(img,show_result=False):
+    #### แปลงเป็นขาวดำ ####
     _,thres_img = cv2.threshold(img,30,255,cv2.THRESH_BINARY)
+    #### หาcontour ####
     contours, hierarchy = cv2.findContours(thres_img,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    #### วนหา contourที่มีขนาดใหญ่ที่สุด ####
     max_area = 0
     max_area_id = -1
     for id,contour in enumerate(contours):
@@ -96,6 +110,7 @@ def cornerDetector(img,show_result=False):
         cv2.imshow("SHOWMaxCountour",ShowContour)
     return four_points
 
+#### ฟังก์ชันปรับภาพให้เป็นสี่เหลี่ยม ####
 def doWarpPerspective(img,four_points):
     '''https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/'''
     '''https://theailearner.com/tag/cv2-getperspectivetransform/'''
@@ -145,24 +160,40 @@ cv2.namedWindow("Calibrated_Reference",cv2.WINDOW_NORMAL)
 cv2.namedWindow("Realtime_CalibratePaper",cv2.WINDOW_NORMAL)
 
 while (True):
-   
+    #### 7) รับภาพจากกล้อง เก็บในตัวแปร frame ####
     ret , frame = cap.read()
-    
+    #### 8) แปลงเป็นภาพขาวเทา ####
     frame_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    #### 9) หาขอบของภาพกระดาษสีเขียว ####
     frame_laplace = laplaceDetector(frame_gray)
+    #### 10) เรียกฟังก์ชันหามุมของกระดาษ ####
     connerFourPoints = cornerDetector(frame_laplace)
+    #### 11) ถ้าเจอจุด4จุดแสดงว่าหากระดาษเจอ ให้ทำการทำภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยม ####
     if(len(connerFourPoints)==4): # if found valid conner
+        #### 12) ทำการทำภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยม ####
         warp_frame = doWarpPerspective(frame,connerFourPoints)
+        #### 13) แสดงภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยมออกทางหน้าจอ ####
         cv2.imshow("Realtime_CalibratePaper",warp_frame)
+        #### 14) หา histogram ของภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยม ####
         warp_frame_HistImage,warp_frame_Hist = renderHistogram(warp_frame)
+        cv2.imshow("RealtimeCalibratePaper_HistImage",warp_frame_HistImage)
+        #### 15 หา histogram ของภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยม ####
+        #### 16 เอาทั้ง 3ch histogram มาลบกัน ระหว่างภาพกระดาษที่calibrateไว้ กับภาพกระดาษปัจจุบันที่อ่านได้จากล้อง ####
+        #### ลบกันเสร็จเอาไป ยกกำลังสอง และ นำไป sum ทั้ง level 0-255 ####
         sum_r_square = np.sum(np.square(warp_frame_Hist[0] - CalibratedImage_Hist[0])) # Red
         sum_g_square = np.sum(np.square(warp_frame_Hist[1] - CalibratedImage_Hist[1])) # Green
         sum_b_square = np.sum(np.square(warp_frame_Hist[2] - CalibratedImage_Hist[2])) # Blue
+        #### เอามาทั้งสามสีมารวมกันแล้วถอดรากที่สอง
+        #### 17 ได้เป็นค่าความแตกต่างของ ภาพกระดาษปัจจุบันที่อ่านได้จากล้อง กับ ภาพกระดาษที่calibrateไว้ ####
         diffCalibatedValue = np.sqrt(sum_r_square + sum_g_square + sum_b_square)
+
         #print(f"DiffCalibatedValue={diffCalibatedValue}")
+        #### 18 แสดงค่าความต่างในภาพ ####
         cv2.putText(frame,"diff:"+str(diffCalibatedValue),(20,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,0,255),2)
+        #### 19 ถ้าอยู่ในช่วง 0 - ค่า diffThreshold ถือว่า OK ####
         if(diffCalibatedValue>=0 and diffCalibatedValue<=diffThreshold): # OK
             cv2.putText(frame,"Calibration -> OK",(20,100),cv2.FONT_HERSHEY_SIMPLEX,1.3,(0,255,0),2)# OK
+        #### 20 ถ้านอกช่วง  ถือว่าการ Calibration ไม่ผ่าน ####
         else :
             cv2.putText(frame,"Calibration -> not passed",(20,100),cv2.FONT_HERSHEY_SIMPLEX,1.3,(0,0,255),2)# OK
         cv2.imshow("Current_Histogram",warp_frame_HistImage)
@@ -170,10 +201,14 @@ while (True):
         cv2.putText(frame,"Not found Paper",(20,50),cv2.FONT_HERSHEY_SIMPLEX,1.5,(0,0,255),2)# Not found Paper
         cv2.putText(frame,"(more darker/lighter)",(20,100),cv2.FONT_HERSHEY_SIMPLEX,1.2,(0,0,255),2)# Not found Paper
 
+    #### 21 แสดงภาพกระดาษปัจจุบันที่อ่านได้จากล้อง กับ ภาพกระดาษที่calibrateไว้ ####
     cv2.imshow("Realtime_Camera",frame)
     
     cv2.imshow("Calibrated_Reference",CalibratedImage_HistImage)
     #cv2.imshow("frame_laplace",frame_laplace)
+    cv2.imshow("CalibratedImage_HistImage",CalibratedImage_HistImage)
+    
+
     
 
 

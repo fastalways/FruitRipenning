@@ -3,7 +3,7 @@ import time
 import cv2
 from time import strftime
 cap = cv2.VideoCapture(0)
-
+#### 1) เปิดไฟ ####
 #relay
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
@@ -11,9 +11,11 @@ GPIO.setup(4,GPIO.OUT)
 
 GPIO.output(4, True)
 
+#### 2) พิมพ์ข้อความ กด c เพื่อแคปภาพ กด e เพื่อออก ####
 print("Press c to capture calibration image")
 print("Press e to exit")
 
+#### ฟังก์ชันหาขอบภาพ ####
 def laplaceDetector(img,kernel_size = 3,ddepth = cv2.CV_16S):
     src = img.copy()
     src = cv2.GaussianBlur(src, (3, 3), 0)
@@ -21,10 +23,14 @@ def laplaceDetector(img,kernel_size = 3,ddepth = cv2.CV_16S):
     abs_dst = cv2.convertScaleAbs(dst)
     return abs_dst
 
+#### ฟังก์ชันหามุมของภาพ ####
 def cornerDetector(img,show_result=False):
+    #### แปลงเป็นขาวดำ ####
     _,thres_img = cv2.threshold(img,30,255,cv2.THRESH_BINARY)
     #cv2.imshow("thres_img",thres_img) 
+    #### หาcontour ####
     contours, hierarchy = cv2.findContours(thres_img,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    #### วนหา contourที่มีขนาดใหญ่ที่สุด ####
     max_area = 0
     max_area_id = -1
     for id,contour in enumerate(contours):
@@ -46,6 +52,7 @@ def cornerDetector(img,show_result=False):
         cv2.imshow("SHOWMaxCountour",ShowContour)
     return four_points
 
+#### ฟังก์ชันปรับภาพให้เป็นสี่เหลี่ยม ####
 def doWarpPerspective(img,four_points):
     '''https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/'''
     '''https://theailearner.com/tag/cv2-getperspectivetransform/'''
@@ -89,22 +96,28 @@ def doWarpPerspective(img,four_points):
 
 warp_frame = None
 
+
+
 while (True):
-   
+    #### 3) รับภาพจากกล้อง เก็บในตัวแปร frame ####
     ret , frame = cap.read()
-    
+    #### 4) แปลงเป็นภาพขาวเทา ####
     frame_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    #### 5) หาขอบของภาพกระดาษสีเขียว ####
     frame_laplace = laplaceDetector(frame_gray)
-    connerFourPoints = cornerDetector(frame_laplace)
+    #### 6) เรียกฟังก์ชันหามุมของกระดาษ ####
+    connerFourPoints = cornerDetector(frame_laplace,show_result=True)
+    #### 7) ถ้าเจอจุด4จุดแสดงว่าหากระดาษเจอ ให้ทำการทำภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยม ####
     if(len(connerFourPoints)==4): # if found valid conner
+        #### ทำการทำภาพกระดาษที่บิดงอกลับมาตรงเป็นสี่เหลี่ยม ####
         warp_frame = doWarpPerspective(frame,connerFourPoints)
         cv2.imshow("Warped",warp_frame)
     cv2.imshow("Output",frame)
-    #cv2.imshow("frame_laplace",frame_laplace)
+    cv2.imshow("frame_laplace",frame_laplace)
 
     key = cv2.waitKey(1)
 
-    
+    #### 8) ถ้ากด ปุ่ม c ให้บันทึกภาพ ####
     if key == ord("c"):
         timefile = strftime("%d_%m_%Y_%H-%M-%S")
         if(warp_frame.all()!=None):
@@ -112,6 +125,7 @@ while (True):
             cv2.imwrite( calibFileName , warp_frame) # png for lossless/compression
             cv2.imwrite( timefile + '.jpg', frame)
             print("Saved -> "+calibFileName)
+    #### 8) ถ้ากด ปุ่ม e ให้ออกจากโปรแกรมโดยการbreakออกจากloop ####
     if key & 0xFF == ord("e"):
         GPIO.output(4, False)
         break
