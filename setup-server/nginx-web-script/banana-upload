@@ -1,0 +1,31 @@
+server {
+    server_name banana-upload.gezdev.com;
+
+    location / {
+        #include uwsgi_params;
+        #uwsgi_pass unix:/var/www/banana.gezdev.com/Flask/FlaskAPIuplodeFile/app/upload.sock;
+	proxy_set_header   X-Forwarded-For $remote_addr;
+        proxy_set_header   Host $http_host;
+        proxy_pass         "http://127.0.0.1:5002";
+    }
+
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/banana-upload.gezdev.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/banana-upload.gezdev.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = banana-upload.gezdev.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    server_name banana-upload.gezdev.com;
+    listen 80;
+    return 404; # managed by Certbot
+
+
+}

@@ -1,0 +1,27 @@
+server {
+    server_name banana-backend.gezdev.com;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/var/www/banana.gezdev.com/WebsiteProject/backend/backend.sock;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/banana-backend.gezdev.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/banana-backend.gezdev.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = banana-backend.gezdev.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name banana-backend.gezdev.com;
+    return 404; # managed by Certbot
+
+
+}

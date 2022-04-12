@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to serve backend
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/var/www/banana.gezdev.com/WebsiteProject/backend
+Environment="PATH=/var/www/banana.gezdev.com/WebsiteProject/backend/venv-backend/bin"
+ExecStart=/var/www/banana.gezdev.com/WebsiteProject/backend/venv-backend/bin/uwsgi --ini backend.ini
+
+[Install]
+WantedBy=multi-user.target

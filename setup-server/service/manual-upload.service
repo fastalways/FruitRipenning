@@ -1,0 +1,8 @@
+[Unit]
+After=network.service
+
+[Service]
+ExecStart=/var/www/banana.gezdev.com/Flask/FlaskAPIuplodeFile/app/manual-run.sh
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to serve banana-upload
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/var/www/banana.gezdev.com/Flask/FlaskAPIuplodeFile/app
+Environment="PATH=/var/www/banana.gezdev.com/Flask/FlaskAPIuplodeFile/app/venv-upload/bin"
+ExecStart=/var/www/banana.gezdev.com/Flask/FlaskAPIuplodeFile/app/venv-upload/bin/uwsgi --ini upload.ini
+
+[Install]
+WantedBy=multi-user.target
