@@ -5,7 +5,7 @@ from os import listdir
 from os.path import isfile, join
 import copy
 
-img_path = './BananaForSegment_12Feb2022/'
+img_path = './dataset 16 - 19-2-65/'
 
 alpha_value = .7 # 0.1-1
 
@@ -150,7 +150,7 @@ def main():
     num_imgs = len(imgs)
     col = 4
     plt.rcParams["figure.figsize"] = (30,40)
-    for i in range(num_imgs):
+    '''for i in range(num_imgs):
         if i==1 :
             plt.subplot(num_imgs,col,plt_index),plt.imshow(imgs[i]),plt.title("Original"),plt.xticks([]),plt.yticks([])
             plt_index+=1
@@ -173,7 +173,7 @@ def main():
             plt_index+=1
             plt.subplot(num_imgs,col,plt_index),plt.imshow(locateBG_imgs[i]),plt.xticks([]),plt.yticks([])
             plt_index+=1
-    plt.show()
+    plt.show()'''
 
 
 
